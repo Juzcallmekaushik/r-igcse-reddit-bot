@@ -50,4 +50,23 @@ export class RedditService {
             console.error(`Failed to unlock post ${postLink}:`, error);
         }
     }
+
+    async getPostStatus(postLink) {
+        try {
+            const postIdMatch = postLink.match(/comments\/([a-z0-9]+)/i);
+            if (!postIdMatch || postIdMatch.length < 2) {
+                throw new Error('Invalid post link format. Could not extract post ID.');
+            }
+    
+            const postId = postIdMatch[1];
+            const post = await this.r.getSubmission(postId).fetch();
+    
+            return {
+                isLocked: post.locked,
+            };
+        } catch (error) {
+            console.error('Error fetching post status:', error);
+            throw new Error('Failed to fetch post status.');
+        }
+    }
 }

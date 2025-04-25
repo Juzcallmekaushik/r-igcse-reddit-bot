@@ -1,6 +1,6 @@
-import { Client, GatewayIntentBits, REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
-import { scheduleCommands, handleScheduleCommand } from '../commands/scheduleCommands.mjs';
+import { Client, GatewayIntentBits, REST, Routes, PresenceUpdateStatus, ActivityType } from 'discord.js';
+import { schedulePosts, handleSchedulePosts } from '../commands/scheduling/schedulePosts.mjs';
 
 dotenv.config();
 
@@ -12,18 +12,17 @@ export class DiscordService {
 
         this.client.once('ready', async () => {
             console.log(`Logged in as ${this.client.user.tag}`);
-
+            await this.client.application.fetch();
             const rest = new REST({ version: '10' }).setToken(token);
-
+            this.client.user.setActivity('r/IGCSE Subreddit', { type: ActivityType.Watching });
             try {
                 console.log('Started refreshing application (/) commands.');
 
                 await rest.put(
-                    Routes.applicationCommands(this.client.user.id),
-                    { body: scheduleCommands },
+                    Routes.applicationCommands(this.client.application.id),
+                    { body: schedulePosts},
                 );
 
-                this.client.user.setActivity('Scheduling posts', { type: 'WATCHING' });
 
                 console.log('Successfully reloaded application (/) commands.');
             } catch (error) {
@@ -35,7 +34,7 @@ export class DiscordService {
             if (!interaction.isCommand()) return;
 
             if (interaction.commandName.startsWith('schedule')) {
-                await handleScheduleCommand(interaction);
+                await handleSchedulePosts(interaction);
             }
         });
 
