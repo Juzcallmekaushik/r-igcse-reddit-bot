@@ -2,7 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import { RedditService } from '../../services/redditService.mjs';
 import { insertData, deleteData, fetchData } from '../../services/mongoService.mjs';
 
-export const schedulePosts = [
+export const schedulePostCommands = [
     new SlashCommandBuilder()
         .setName('schedule')
         .setDescription('Schedule a post action')

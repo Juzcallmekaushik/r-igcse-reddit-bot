@@ -1,43 +1,63 @@
 import dotenv from 'dotenv';
-import { Client, GatewayIntentBits, REST, Routes, PresenceUpdateStatus, ActivityType } from 'discord.js';
-import { schedulePosts, handleSchedulePosts } from '../commands/scheduling/schedulePosts.mjs';
+import {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  ActivityType
+} from 'discord.js';
+
+import {
+  schedulePostCommands,
+  handleSchedulePosts
+} from '../commands/scheduling/schedulePosts.mjs';
 
 dotenv.config();
 
 export class DiscordService {
-    constructor(token) {
-        this.client = new Client({
-            intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
-        });
+  constructor(token) {
+    this.client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+      ],
+    });
 
-        this.client.once('ready', async () => {
-            console.log(`Logged in as ${this.client.user.tag}`);
-            await this.client.application.fetch();
-            const rest = new REST({ version: '10' }).setToken(token);
-            this.client.user.setActivity('r/IGCSE Subreddit', { type: ActivityType.Watching });
-            try {
-                console.log('Started refreshing application (/) commands.');
+    this.client.once('ready', async () => {
+      console.log(`[-] Logged in as ${this.client.user.tag}`);
+      await this.client.application.fetch();
 
-                await rest.put(
-                    Routes.applicationCommands(this.client.application.id),
-                    { body: schedulePosts},
-                );
+      const rest = new REST({ version: '10' }).setToken(token);
+      const clientId = this.client.application.id;
 
+      this.client.user.setActivity('r/IGCSE Subreddit', {
+        type: ActivityType.Watching,
+      });
 
-                console.log('Successfully reloaded application (/) commands.');
-            } catch (error) {
-                console.error(error);
-            }
-        });
+      try {
+        const existing = await rest.get(Routes.applicationCommands(clientId));
+        const keepNames = schedulePostCommands.map(cmd => cmd.name);
 
-        this.client.on('interactionCreate', async (interaction) => {
-            if (!interaction.isCommand()) return;
+        await rest.put(
+          Routes.applicationCommands(clientId),
+          { body: schedulePostCommands }
+        );
 
-            if (interaction.commandName.startsWith('schedule')) {
-                await handleSchedulePosts(interaction);
-            }
-        });
+        console.log('[-] Successfully reloaded application (/) commands.');
+      } catch (error) {
+        console.error('Error updating commands:', error);
+      }
+    });
 
-        this.client.login(token);
-    }
+    this.client.on('interactionCreate', async (interaction) => {
+      if (!interaction.isCommand()) return;
+
+      if (interaction.commandName.startsWith('schedule')) {
+        await handleSchedulePosts(interaction);
+      }
+    });
+
+    this.client.login(token);
+  }
 }

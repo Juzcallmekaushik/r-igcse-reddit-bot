@@ -17,7 +17,7 @@ export class RedditService {
     async initialize() {
         try {
             const me = await this.r.getMe();
-            console.log(`Logged in as Reddit user: ${me.name}`);
+            console.log(`[-] Logged in as Reddit user: ${me.name}`);
         } catch (error) {
             console.error('Failed to initialize RedditService:', error);
         }
