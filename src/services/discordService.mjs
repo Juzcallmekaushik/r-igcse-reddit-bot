@@ -36,6 +36,11 @@ export class DiscordService {
 
     this.client.once('ready', async () => {
       console.log(`[-] Logged in as ${this.client.user.tag}`);
+
+      this.client.user.setActivity('r/IGCSE Subreddit', {
+        type: ActivityType.Watching,
+      });
+
       await this.sendLoginEmbed(logChannelIds);
     });
 
