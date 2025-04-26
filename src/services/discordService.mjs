@@ -67,19 +67,17 @@ export class DiscordService {
 
           await handleSchedulePosts(interaction);
 
-          if (!interaction.replied && !interaction.deferred) {
-            await interaction.followUp({
+          if (!interaction.replied) {
+            await interaction.editReply({
               content: 'Action completed successfully.',
-              ephemeral: true,
             });
           }
         } catch (error) {
           console.error('Error handling interaction:', error);
 
-          if (!interaction.replied && !interaction.deferred) {
-            await interaction.followUp({
+          if (!interaction.replied) {
+            await interaction.editReply({
               content: 'Failed to schedule the action. Please try again later.',
-              ephemeral: true,
             });
           }
         }
