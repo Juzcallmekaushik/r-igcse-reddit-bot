@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { RedditService } from '../../services/redditService.mjs';
 import { insertData, deleteData, fetchData } from '../../services/mongoService.mjs';
+import { LogService } from '../../services/LogService.mjs'; // Import LogService
 
 export const schedulePostCommands = [
     new SlashCommandBuilder()
@@ -37,6 +38,8 @@ export const schedulePostCommands = [
 ].map(command => command.toJSON());
 
 export async function handleSchedulePosts(interaction) {
+    const logService = new LogService(interaction.client, ['1365518941450932224', '1365561748341395577', '1365595878525636681']); // Initialize LogService
+
     const hasModRole = interaction.member.roles.cache.has('576460179441188864') || 
                        interaction.member.roles.cache.has('1364254995196674079') ||
                        interaction.member.roles.cache.has('1238502135771955405') ||
@@ -52,7 +55,7 @@ export async function handleSchedulePosts(interaction) {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'list') {
-        return handleListCommand(interaction);
+        return handleListCommand(interaction, logService);
     }
 
     const postLink = interaction.options.getString('postlink');
@@ -61,7 +64,7 @@ export async function handleSchedulePosts(interaction) {
     let epochTime = parseInt(time, 10);
 
     if (isNaN(epochTime)) {
-        console.log('Invalid epoch timestamp.\n', error => error.toString());
+        await logService.logErrorToChannel(new Error('Invalid epoch timestamp provided.'), 'Schedule Command', interaction);
         await interaction.editReply({
             content: 'Invalid epoch timestamp. Please provide a valid number.',
             flags: 64,
@@ -123,7 +126,7 @@ export async function handleSchedulePosts(interaction) {
                             components: []
                         });
                     } catch (error) {
-                        console.log('Error overwriting scheduled action: ' + error);
+                        await logService.logErrorToChannel(error, 'Overwrite Scheduled Action', interaction);
                         await i.update({
                             content: 'Failed to overwrite the scheduled action. Please try again later.',
                             components: []
@@ -166,7 +169,7 @@ export async function handleSchedulePosts(interaction) {
             }],
         });
     } catch (error) {
-        console.log('Error storing scheduled action: ' + error);
+        await logService.logErrorToChannel(error, 'Schedule Command', interaction);
         await interaction.editReply({
             content: 'Failed to schedule the action. Please try again later.',
             flags: 64,
@@ -174,7 +177,7 @@ export async function handleSchedulePosts(interaction) {
     }
 }
 
-async function handleListCommand(interaction) {
+async function handleListCommand(interaction, logService) {
     try {
         const now = Date.now();
         const actions = await fetchData('scheduledActions', { epochTime: { $gte: now }, guildid: interaction.guild.id });
@@ -193,30 +196,30 @@ async function handleListCommand(interaction) {
         const lockEmbed = {
             title: 'Pending Locks',
             fields: pendingLocks.length > 0
-            ? await Promise.all(pendingLocks.map(async action => {
-                const redditService = new RedditService();
-                const postTitle = await redditService.getPostTitle(action.postLink);
-                return {
-                name: `${pendingLocks.indexOf(action) + 1}. ${postTitle || 'Unknown Title'}`,
-                value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
-                };
-            }))
-            : [{ name: 'No pending locks', value: 'There are no pending locks.' }],
+                ? await Promise.all(pendingLocks.map(async action => {
+                    const redditService = new RedditService();
+                    const postTitle = await redditService.getPostTitle(action.postLink);
+                    return {
+                        name: `${pendingLocks.indexOf(action) + 1}. ${postTitle || 'Unknown Title'}`,
+                        value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
+                    };
+                }))
+                : [{ name: 'No pending locks', value: 'There are no pending locks.' }],
             color: 0xFFA500
         };
 
         const unlockEmbed = {
             title: 'Pending Unlocks',
             fields: pendingUnlocks.length > 0
-            ? await Promise.all(pendingUnlocks.map(async action => {
-                const redditService = new RedditService();
-                const postTitle = await redditService.getPostTitle(action.postLink);
-                return {
-                name: `${pendingUnlocks.indexOf(action) + 1}. ${postTitle || 'Unknown Title'}`,
-                value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
-                };
-            }))
-            : [{ name: 'No pending unlocks', value: 'There are no pending unlocks.' }],
+                ? await Promise.all(pendingUnlocks.map(async action => {
+                    const redditService = new RedditService();
+                    const postTitle = await redditService.getPostTitle(action.postLink);
+                    return {
+                        name: `${pendingUnlocks.indexOf(action) + 1}. ${postTitle || 'Unknown Title'}`,
+                        value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
+                    };
+                }))
+                : [{ name: 'No pending unlocks', value: 'There are no pending unlocks.' }],
             color: 0x00FFFF
         };
 
@@ -225,53 +228,10 @@ async function handleListCommand(interaction) {
             flags: 64,
         });
     } catch (error) {
-        console.log('Error fetching scheduled actions: ' + error);
+        await logService.logErrorToChannel(error, 'List Scheduled Actions', interaction);
         await interaction.editReply({
             content: 'Failed to fetch scheduled actions. Please try again later.',
             flags: 64,
         });
-        return;
     }
 }
-
-setInterval(async () => {
-    const now = Date.now();
-    try {
-        const actions = await fetchData('scheduledActions', { epochTime: { $lte: now } });
-
-        for (const action of actions) {
-            const { action: type, postLink, _id } = action;
-            const redditService = new RedditService();
-
-            try {
-                if (type === 'lock') {
-                    await redditService.lockPost(postLink);
-                    console.log(`Post locked successfully: ${postLink}`);
-                } else if (type === 'unlock') {
-                    await redditService.unlockPost(postLink);
-                    console.log(`Post unlocked successfully: ${postLink}`);
-                }
-
-                await deleteData('scheduledActions', { _id });
-
-                console.log(`Post ${type.charAt(0).toUpperCase() + type.slice(1)}ed: ${postLink}`);
-                const embed = {
-                    title: `Post ${type.charAt(0).toUpperCase() + type.slice(1)}ed`,
-                    description: `The [post](${postLink}) has been successfully ${type}ed.`,
-                    fields: [
-                        { name: 'Moderator', value: action.scheduledBy || 'Unknown' },
-                        { name: 'Post Link', value: `[Click here](${postLink})` }
-                    ],
-                    color: type === 'lock' ? 0xFF0000 : 0x00FF00
-                };
-
-                const channel = await interaction.guild.channels.fetch(interaction.channelId);
-                await channel.send({ embeds: [embed] });
-            } catch (error) {
-                console.log(`Failed to ${type} post: ${postLink} - ${error}`);
-            }
-        }
-    } catch (error) {
-        console.log('Error fetching scheduled actions: ' + error);
-    }
-}, 30000);
