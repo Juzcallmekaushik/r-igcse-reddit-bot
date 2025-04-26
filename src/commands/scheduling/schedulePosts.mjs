@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { RedditService } from '../../services/redditService.mjs';
 import { insertData, deleteData, fetchData } from '../../services/mongoService.mjs';
-import { LogService } from '../../services/LogService.mjs'; // Import LogService
+import { LogService } from '../../services/LogService.mjs';
 
 export const schedulePostCommands = [
     new SlashCommandBuilder()
@@ -38,7 +38,7 @@ export const schedulePostCommands = [
 ].map(command => command.toJSON());
 
 export async function handleSchedulePosts(interaction) {
-    const logService = new LogService(interaction.client, ['1365518941450932224', '1365561748341395577', '1365595878525636681']); // Initialize LogService
+    const logService = new LogService(interaction.client, ['1365518941450932224', '1365561748341395577', '1365595878525636681']);
 
     const hasModRole = interaction.member.roles.cache.has('576460179441188864') || 
                        interaction.member.roles.cache.has('1364254995196674079') ||
@@ -64,7 +64,6 @@ export async function handleSchedulePosts(interaction) {
     let epochTime = parseInt(time, 10);
 
     if (isNaN(epochTime)) {
-        await logService.logErrorToChannel(new Error('Invalid epoch timestamp provided.'), 'Schedule Command', interaction);
         await interaction.editReply({
             content: 'Invalid epoch timestamp. Please provide a valid number.',
             flags: 64,

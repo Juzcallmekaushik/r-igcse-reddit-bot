@@ -76,7 +76,7 @@ export class DiscordService {
 
   async sendLoginEmbed(logChannelIds) {
     try {
-      const redditUser = await this.redditService.r.getMe();
+      const redditUser = await this.redditService.r.getMe();    
       const embed = {
         author: {
           name: this.client.user.tag,
