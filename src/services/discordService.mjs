@@ -63,10 +63,8 @@ export class DiscordService {
 
       if (interaction.commandName.startsWith('schedule')) {
         try {
-          console.log(`[-] Received command: ${interaction.commandName}`);
           if (!interaction.deferred && !interaction.replied) {
             await interaction.deferReply({ flags: 64 });
-            console.log(`[-] Defering reply for command: ${interaction.commandName}`);
           }
 
           const result = await handleSchedulePosts(interaction);
@@ -78,12 +76,10 @@ export class DiscordService {
         } catch (error) {
           console.error('Error handling interaction:', error);
 
-          // Edit the deferred reply with an error message
           if (interaction.deferred) {
             await interaction.editReply({
               content: 'Failed to schedule the action. Please try again later.',
             });
-          console.log(`[-] Edited reply for command: ${interaction.commandName}`);
           }
         }
       }
