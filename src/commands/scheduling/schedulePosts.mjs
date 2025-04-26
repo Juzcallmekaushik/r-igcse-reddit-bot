@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { RedditService } from '../../services/redditService.mjs';
 import { insertData, deleteData, fetchData } from '../../services/mongoService.mjs';
 
@@ -39,11 +39,12 @@ export const schedulePostCommands = [
 export async function handleSchedulePosts(interaction) {
     const hasModRole = interaction.member.roles.cache.has('576460179441188864') || 
                        interaction.member.roles.cache.has('1364254995196674079') ||
+                       interaction.member.roles.cache.has('1238502135771955405') ||
                        interaction.member.roles.cache.has('668919889247076392');
     if (!hasModRole) {
         await interaction.reply({
             content: 'Not enough permissions to execute this command.',
-            ephemeral: true
+            flags: 64,
         });
         return;
     }
@@ -60,8 +61,11 @@ export async function handleSchedulePosts(interaction) {
     let epochTime = parseInt(time, 10);
 
     if (isNaN(epochTime)) {
-        console.error('Invalid epoch timestamp.');
-        await interaction.reply('Invalid epoch timestamp. Please provide a valid number.');
+        console.log('Invalid epoch timestamp.\n', error => error.toString());
+        await interaction.reply({
+            content: 'Invalid epoch timestamp. Please provide a valid number.',
+            flags: 64,
+        });
         return;
     }
 
@@ -76,39 +80,81 @@ export async function handleSchedulePosts(interaction) {
 
     const action = subcommand === 'lock' ? 'lock' : 'unlock';
 
-    const redditService = new RedditService();
     try {
-        const postStatus = await redditService.getPostStatus(postLink);
-        if (action === 'lock' && postStatus.isLocked) {
-            await interaction.reply({
-                content: 'Post has already been locked.',
-                ephemeral: true
-            });
-            return;
-        }
-        if (action === 'unlock' && !postStatus.isLocked) {
-            await interaction.reply({
-                content: 'Post has already been unlocked.',
-                ephemeral: true
-            });
-            return;
-        }
-    } catch (error) {
-        console.error('Error checking post status:', error);
-        await interaction.reply('Failed to check the post status. Please try again later.');
-        return;
-    }
+        const existingAction = await fetchData('scheduledActions', { postLink, guildid: interaction.guild.id });
 
-    try {
+        if (existingAction.length > 0) {
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('overwrite_yes')
+                        .setLabel('Yes')
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setCustomId('overwrite_no')
+                        .setLabel('No')
+                        .setStyle(ButtonStyle.Secondary)
+                );
+
+            await interaction.reply({
+                content: 'This post has already been scheduled. Would you like to overwrite it?',
+                components: [row],
+                flags: 64,
+            });
+
+            const filter = i => i.user.id === interaction.user.id;
+            const collector = interaction.channel.createMessageComponentCollector({ filter, time: 15000 });
+
+            collector.on('collect', async i => {
+                if (i.customId === 'overwrite_yes') {
+                    try {
+                        await deleteData('scheduledActions', { postLink, guildid: interaction.guild.id });
+                        await insertData('scheduledActions', {
+                            action,
+                            postLink,
+                            epochTime,
+                            scheduledBy: interaction.user.username,
+                            guildid: interaction.guild.id,
+                            createdAt: new Date()
+                        });
+
+                        await i.update({
+                            content: `The [post](${postLink}) has been rescheduled to ${action} at <t:${Math.floor(epochTime / 1000)}:F>.`,
+                            components: []
+                        });
+                    } catch (error) {
+                        console.log('Error overwriting scheduled action: ' + error);
+                        await i.update({
+                            content: 'Failed to overwrite the scheduled action. Please try again later.',
+                            components: []
+                        });
+                    }
+                } else if (i.customId === 'overwrite_no') {
+                    await i.update({
+                        content: 'The action was not overwritten.',
+                        components: []
+                    });
+                }
+            });
+
+            return;
+        }
+
         await insertData('scheduledActions', {
             action,
             postLink,
             epochTime,
             scheduledBy: interaction.user.username,
+            guildid: interaction.guild.id,
             createdAt: new Date()
         });
 
         await interaction.reply({
+            content: `The [post](${postLink}) has been scheduled to ${action} at <t:${Math.floor(epochTime / 1000)}:F>.`,
+            flags: 64,
+        });
+
+        await interaction.channel.send({
             embeds: [{
                 title: `Post ${action.charAt(0).toUpperCase() + action.slice(1)} Scheduled`,
                 description: `The [post](${postLink}) has been scheduled to be ${action}ed.`,
@@ -118,23 +164,25 @@ export async function handleSchedulePosts(interaction) {
                 ],
                 color: 0x00FF00
             }],
-            ephemeral: true
         });
     } catch (error) {
-        console.error('Error storing scheduled action:', error);
-        await interaction.reply('Failed to schedule the action. Please try again later.');
+        console.log('Error storing scheduled action: ' + error);
+        await interaction.reply({
+            content: 'Failed to schedule the action. Please try again later.',
+            flags: 64,
+        });
     }
 }
 
 async function handleListCommand(interaction) {
     try {
         const now = Date.now();
-        const actions = await fetchData('scheduledActions', { epochTime: { $gte: now } });
+        const actions = await fetchData('scheduledActions', { epochTime: { $gte: now }, guildid: interaction.guild.id });
 
         if (actions.length === 0) {
             await interaction.reply({
                 content: 'There are no pending scheduled actions.',
-                ephemeral: true
+                flags: 64,
             });
             return;
         }
@@ -144,27 +192,45 @@ async function handleListCommand(interaction) {
 
         const lockEmbed = {
             title: 'Pending Locks',
-            description: pendingLocks.length > 0
-                ? pendingLocks.map(action => `**Post**: [here](${action.postLink})\n**Time**: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`).join('\n\n')
-                : 'No pending locks.',
+            fields: pendingLocks.length > 0
+            ? await Promise.all(pendingLocks.map(async action => {
+                const redditService = new RedditService();
+                const postTitle = await redditService.getPostTitle(action.postLink);
+                return {
+                name: `${pendingLocks.indexOf(action) + 1}. ${postTitle || 'Unknown Title'}`,
+                value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
+                };
+            }))
+            : [{ name: 'No pending locks', value: 'There are no pending locks.' }],
             color: 0xFFA500
         };
 
         const unlockEmbed = {
             title: 'Pending Unlocks',
-            description: pendingUnlocks.length > 0
-                ? pendingUnlocks.map(action => `**Post**: [here](${action.postLink})\n**Time**: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`).join('\n\n')
-                : 'No pending unlocks.',
+            fields: pendingUnlocks.length > 0
+            ? await Promise.all(pendingUnlocks.map(async action => {
+                const redditService = new RedditService();
+                const postTitle = await redditService.getPostTitle(action.postLink);
+                return {
+                name: `${pendingUnlocks.indexOf(action) + 1}. ${postTitle || 'Unknown Title'}`,
+                value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
+                };
+            }))
+            : [{ name: 'No pending unlocks', value: 'There are no pending unlocks.' }],
             color: 0x00FFFF
         };
 
         await interaction.reply({
             embeds: [lockEmbed, unlockEmbed],
-            ephemeral: true
+            flags: 64,
         });
     } catch (error) {
-        console.error('Error fetching scheduled actions:', error);
-        await interaction.reply('Failed to fetch scheduled actions. Please try again later.');
+        console.log('Error fetching scheduled actions: ' + error);
+        await interaction.reply({
+            content: 'Failed to fetch scheduled actions. Please try again later.',
+            flags: 64,
+        });
+        return;
     }
 }
 
@@ -188,18 +254,12 @@ setInterval(async () => {
 
                 await deleteData('scheduledActions', { _id });
 
-                await interaction.channel.send({
-                    embeds: [{
-                        title: `Post ${type.charAt(0).toUpperCase() + type.slice(1)}ed`,
-                        description: `The [post](${postLink}) has been successfully ${type}ed.`,
-                        color: 0x00FF00
-                    }]
-                });
+                console.log(`Post ${type.charAt(0).toUpperCase() + type.slice(1)}ed: ${postLink}`);
             } catch (error) {
-                console.error(`Failed to ${type} post: ${postLink}`, error);
+                console.log(`Failed to ${type} post: ${postLink} - ${error}`);
             }
         }
     } catch (error) {
-        console.error('Error fetching scheduled actions:', error);
+        console.log('Error fetching scheduled actions: ' + error);
     }
 }, 30000);

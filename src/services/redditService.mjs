@@ -23,6 +23,23 @@ export class RedditService {
         }
     }
 
+    async getPostTitle(postLink) {
+        try {
+            const postIdMatch = postLink.match(/comments\/([a-z0-9]+)/i);
+            if (!postIdMatch || postIdMatch.length < 2) {
+                throw new Error('Invalid post link format. Could not extract post ID.');
+            }
+
+            const postId = postIdMatch[1];
+            const post = await this.r.getSubmission(postId).fetch();
+
+            return post.title;
+        } catch (error) {
+            console.error('Error fetching post title:', error);
+            throw new Error('Failed to fetch post title.');
+        }
+    }
+
     async lockPost(postLink) {
         try {
             const postId = postLink.split('/comments/')[1]?.split('/')[0];

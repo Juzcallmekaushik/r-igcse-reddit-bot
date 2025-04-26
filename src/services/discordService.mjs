@@ -37,7 +37,15 @@ export class DiscordService {
 
       try {
         const existing = await rest.get(Routes.applicationCommands(clientId));
-        const keepNames = schedulePostCommands.map(cmd => cmd.name);
+
+        const entryPointCommand = existing.find(cmd => cmd.name === 'entry-point');
+        if (entryPointCommand) {
+          schedulePostCommands.push({
+            name: entryPointCommand.name,
+            description: entryPointCommand.description,
+            options: entryPointCommand.options,
+          });
+        }
 
         await rest.put(
           Routes.applicationCommands(clientId),
