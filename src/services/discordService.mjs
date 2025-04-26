@@ -1,85 +1,27 @@
-import dotenv from 'dotenv';
-import {
-  Client,
-  GatewayIntentBits,
-  REST,
-  Routes,
-  ActivityType
-} from 'discord.js';
+this.client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isCommand()) return;
 
-import {
-  schedulePostCommands,
-  handleSchedulePosts
-} from '../commands/scheduling/schedulePosts.mjs';
+  if (interaction.commandName.startsWith('schedule')) {
+    try {
+      await interaction.deferReply({ ephemeral: true });
 
-dotenv.config();
+      await handleSchedulePosts(interaction);
 
-export class DiscordService {
-  constructor(token) {
-    this.client = new Client({
-      intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-      ],
-    });
-
-    this.client.once('ready', async () => {
-      console.log(`[-] Logged in as ${this.client.user.tag}`);
-      await this.client.application.fetch();
-
-      const rest = new REST({ version: '10' }).setToken(token);
-      const clientId = this.client.application.id;
-
-      this.client.user.setActivity('r/IGCSE Subreddit', {
-        type: ActivityType.Watching,
-      });
-
-      try {
-        const existing = await rest.get(Routes.applicationCommands(clientId));
-
-        const entryPointCommand = existing.find(cmd => cmd.name === 'entry-point');
-        if (entryPointCommand) {
-          schedulePostCommands.push({
-            name: entryPointCommand.name,
-            description: entryPointCommand.description,
-            options: entryPointCommand.options,
-          });
-        }
-
-        await rest.put(
-          Routes.applicationCommands(clientId),
-          { body: schedulePostCommands }
-        );
-
-        console.log('[-] Successfully reloaded application (/) commands.');
-      } catch (error) {
-        console.error('Error updating commands:', error);
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.followUp({
+          content: 'Action completed successfully.',
+          ephemeral: true,
+        });
       }
-    });
+    } catch (error) {
+      console.error('Error handling interaction:', error);
 
-    this.client.on('interactionCreate', async (interaction) => {
-      if (!interaction.isCommand()) return;
-
-      if (interaction.commandName.startsWith('schedule')) {
-        try {
-          await interaction.deferReply();
-
-          await handleSchedulePosts(interaction);
-
-          if (!interaction.replied) {
-            await interaction.followUp('Action completed successfully.');
-          }
-        } catch (error) {
-          console.error('Error handling interaction:', error);
-
-          if (!interaction.replied) {
-            await interaction.followUp('Failed to schedule the action. Please try again later.');
-          }
-        }
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.followUp({
+          content: 'Failed to schedule the action. Please try again later.',
+          ephemeral: true,
+        });
       }
-    });
-
-    this.client.login(token);
+    }
   }
-}
+});
