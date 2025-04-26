@@ -1,8 +1,7 @@
-import { RedditService } from './services/redditService.mjs';
-import { DiscordService } from './services/discordService.mjs';
-import { insertData, deleteData, updateData, fetchData } from './services/mongoService.mjs';
+import { RedditService } from '../src/services/redditService.mjs';
+import { DiscordService } from '../src/services/discordService.mjs';
+import { insertData, deleteData, updateData, fetchData } from '../src/services/mongoService.mjs';
 import dotenv from 'dotenv';
-import { GuildChannelManager, time } from 'discord.js';
 
 dotenv.config();
 
