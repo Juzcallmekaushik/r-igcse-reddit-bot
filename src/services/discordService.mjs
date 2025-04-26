@@ -62,7 +62,21 @@ export class DiscordService {
       if (!interaction.isCommand()) return;
 
       if (interaction.commandName.startsWith('schedule')) {
-        await handleSchedulePosts(interaction);
+        try {
+          await interaction.deferReply();
+
+          await handleSchedulePosts(interaction);
+
+          if (!interaction.replied) {
+            await interaction.followUp('Action completed successfully.');
+          }
+        } catch (error) {
+          console.error('Error handling interaction:', error);
+
+          if (!interaction.replied) {
+            await interaction.followUp('Failed to schedule the action. Please try again later.');
+          }
+        }
       }
     });
 
