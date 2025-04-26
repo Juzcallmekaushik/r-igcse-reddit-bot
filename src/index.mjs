@@ -28,7 +28,7 @@ const sendLoginEmbed = async () => {
         footer: { timestamp: new Date() },
     };
 
-    const targetChannelIds = ['1365518941450932224', '1365561748341395577'];
+    const targetChannelIds = ['1365518941450932224', '1365561748341395577', '1365595878525636681'];
     const targetChannels = [];
 
     discordService.client.guilds.cache.forEach(guild => {
