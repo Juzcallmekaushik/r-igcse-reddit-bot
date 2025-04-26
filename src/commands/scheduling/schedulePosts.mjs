@@ -42,7 +42,7 @@ export async function handleSchedulePosts(interaction) {
                        interaction.member.roles.cache.has('1238502135771955405') ||
                        interaction.member.roles.cache.has('668919889247076392');
     if (!hasModRole) {
-        await interaction.reply({
+        await interaction.editReply({
             content: 'Not enough permissions to execute this command.',
             flags: 64,
         });
@@ -62,7 +62,7 @@ export async function handleSchedulePosts(interaction) {
 
     if (isNaN(epochTime)) {
         console.log('Invalid epoch timestamp.\n', error => error.toString());
-        await interaction.reply({
+        await interaction.editReply({
             content: 'Invalid epoch timestamp. Please provide a valid number.',
             flags: 64,
         });
@@ -74,7 +74,7 @@ export async function handleSchedulePosts(interaction) {
     }
 
     if (epochTime <= Date.now()) {
-        await interaction.reply('Invalid epoch timestamp. Please provide a valid future timestamp.');
+        await interaction.editReply('Invalid epoch timestamp. Please provide a valid future timestamp.');
         return;
     }
 
@@ -96,7 +96,7 @@ export async function handleSchedulePosts(interaction) {
                         .setStyle(ButtonStyle.Secondary)
                 );
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: 'This post has already been scheduled. Would you like to overwrite it?',
                 components: [row],
                 flags: 64,
@@ -149,7 +149,7 @@ export async function handleSchedulePosts(interaction) {
             createdAt: new Date()
         });
 
-        await interaction.reply({
+        await interaction.editReply({
             content: `The [post](${postLink}) has been scheduled to ${action} at <t:${Math.floor(epochTime / 1000)}:F>.`,
             flags: 64,
         });
@@ -167,7 +167,7 @@ export async function handleSchedulePosts(interaction) {
         });
     } catch (error) {
         console.log('Error storing scheduled action: ' + error);
-        await interaction.reply({
+        await interaction.editReply({
             content: 'Failed to schedule the action. Please try again later.',
             flags: 64,
         });
@@ -180,7 +180,7 @@ async function handleListCommand(interaction) {
         const actions = await fetchData('scheduledActions', { epochTime: { $gte: now }, guildid: interaction.guild.id });
 
         if (actions.length === 0) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: 'There are no pending scheduled actions.',
                 flags: 64,
             });
@@ -220,13 +220,13 @@ async function handleListCommand(interaction) {
             color: 0x00FFFF
         };
 
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [lockEmbed, unlockEmbed],
             flags: 64,
         });
     } catch (error) {
         console.log('Error fetching scheduled actions: ' + error);
-        await interaction.reply({
+        await interaction.editReply({
             content: 'Failed to fetch scheduled actions. Please try again later.',
             flags: 64,
         });
@@ -255,6 +255,18 @@ setInterval(async () => {
                 await deleteData('scheduledActions', { _id });
 
                 console.log(`Post ${type.charAt(0).toUpperCase() + type.slice(1)}ed: ${postLink}`);
+                const embed = {
+                    title: `Post ${type.charAt(0).toUpperCase() + type.slice(1)}ed`,
+                    description: `The [post](${postLink}) has been successfully ${type}ed.`,
+                    fields: [
+                        { name: 'Moderator', value: action.scheduledBy || 'Unknown' },
+                        { name: 'Post Link', value: `[Click here](${postLink})` }
+                    ],
+                    color: type === 'lock' ? 0xFF0000 : 0x00FF00
+                };
+
+                const channel = await interaction.guild.channels.fetch(interaction.channelId);
+                await channel.send({ embeds: [embed] });
             } catch (error) {
                 console.log(`Failed to ${type} post: ${postLink} - ${error}`);
             }
