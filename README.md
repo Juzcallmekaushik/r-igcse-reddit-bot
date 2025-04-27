@@ -2,24 +2,6 @@
 
 This project is a Discord bot that interacts with the Reddit API using the snoowrap library. The bot allows users to execute various commands that fetch and submit content on Reddit directly from Discord.
 
-## Project Structure
-
-```
-reddit-discord-bot
-├── src
-│   ├── index.ts               # Entry point of the application
-│   ├── commands
-│   │   └── index.ts           # Command functions for Discord
-│   ├── services
-│   │   ├── redditService.ts    # Service for interacting with Reddit API
-│   │   └── discordService.ts    # Service for managing Discord interactions
-│   └── types
-│       └── index.ts           # Type definitions used throughout the application
-├── package.json                # npm configuration file
-├── tsconfig.json               # TypeScript configuration file
-└── README.md                   # Project documentation
-```
-
 ## Setup Instructions
 
 1. **Clone the repository:**
