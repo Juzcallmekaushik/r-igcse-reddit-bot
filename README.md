@@ -6,8 +6,8 @@ This project is a Discord bot that interacts with the Reddit API using the snoow
 
 1. **Clone the repository:**
    ```
-   git clone <repository-url>
-   cd reddit-discord-bot
+   git clone [<repository-url>](https://github.com/Juzcallmekaushik/r-igcse-reddit-bot/)
+   cd r-igcse-reddit-bot
    ```
 
 2. **Install dependencies:**
@@ -39,6 +39,7 @@ This project is a Discord bot that interacts with the Reddit API using the snoow
      REDDIT_USERNAME=your_username
      REDDIT_PASSWORD=your_password
      DISCORD_TOKEN=your_discord_bot_token
+     MONGO_LINK=your_mongo_link
      ```
 
 5. **Run the bot:**
