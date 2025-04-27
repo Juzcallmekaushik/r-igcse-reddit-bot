@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const logChannelIds = ['1365518941450932224', '1365561748341395577', '1365595878525636681'];
+const logChannelIds = ['1365518941450932224', '1365561748341395577', '1365595878525636681', '1366048336506912768'];
 const redditService = new RedditService();
 const discordService = new DiscordService(process.env.DISCORD_TOKEN, logChannelIds);
 const mongoService = { insertData, deleteData, updateData, fetchData };
