@@ -9,7 +9,8 @@ import {
 
 import {
   schedulePostCommands,
-  handleSchedulePosts
+  handleSchedulePosts,
+  startScheduledActionProcessor 
 } from '../commands/scheduling/schedulePosts.mjs';
 
 import { LogService } from '../services/LogService.mjs';
@@ -40,6 +41,7 @@ export class DiscordService {
       this.client.user.setActivity('r/IGCSE Subreddit', {
         type: ActivityType.Watching,
       });
+      startScheduledActionProcessor(this.client);
 
       await this.sendLoginEmbed(logChannelIds);
     });
@@ -90,6 +92,7 @@ export class DiscordService {
         title: `Bot Restarted Successfully!`,
         description: `Logged in as Reddit user: [${redditUser.name}](https://www.reddit.com/u/${redditUser.name})\nLogged in as ${this.client.user.tag}`,
         color: 0x00ff00,
+        timestamp: new Date().toISOString(),
       };
 
       for (const channelId of logChannelIds) {
@@ -108,4 +111,25 @@ export class DiscordService {
       console.error('⚠️ Failed to fetch Reddit user or send login embed:', err.message);
     }
   }
+
+  async getPost(postLink) {
+    try {
+        const postIdMatch = postLink.match(/comments\/([a-z0-9]+)/i);
+        if (!postIdMatch || postIdMatch.length < 2) {
+            throw new Error('Invalid post link format. Could not extract post ID.');
+        }
+
+        const postId = postIdMatch[1];
+        const post = await this.r.getSubmission(postId).fetch();
+
+        if (post.subreddit.display_name.toLowerCase() !== 'igcse') {
+            throw new Error(`The post belongs to the subreddit "${post.subreddit.display_name}", not "r/igcse".`);
+        }
+
+        return post;
+    } catch (error) {
+        await this.logService.logErrorToChannel('Error fetching post:', error);
+        throw new Error('Failed to fetch post. Please ensure the link is valid and belongs to r/igcse.');
+    }
+}
 }
