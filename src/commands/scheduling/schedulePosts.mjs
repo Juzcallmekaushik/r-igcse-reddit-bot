@@ -38,12 +38,14 @@ export const schedulePostCommands = [
 ].map(command => command.toJSON());
 
 export async function handleSchedulePosts(interaction) {
-    const logService = new LogService(interaction.client, ['1365518941450932224', '1365561748341395577', '1365595878525636681']);
+    const logService = new LogService(interaction.client, ['1365518941450932224', '1365561748341395577', '1365595878525636681', '1366048336506912768']);
     const redditService = new RedditService();
 
     const hasModRole = interaction.member.roles.cache.has('576460179441188864') || 
                        interaction.member.roles.cache.has('1364254995196674079') ||
                        interaction.member.roles.cache.has('1238502135771955405') ||
+
+interaction.member.roles.cache.has('1366069579402575952') ||
                        interaction.member.roles.cache.has('668919889247076392');
     if (!hasModRole) {
         await interaction.editReply({
