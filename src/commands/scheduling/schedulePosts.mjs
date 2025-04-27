@@ -39,6 +39,7 @@ export const schedulePostCommands = [
 
 export async function handleSchedulePosts(interaction) {
     const logService = new LogService(interaction.client, ['1365518941450932224', '1365561748341395577', '1365595878525636681']);
+    const redditService = new RedditService();
 
     const hasModRole = interaction.member.roles.cache.has('576460179441188864') || 
                        interaction.member.roles.cache.has('1364254995196674079') ||
@@ -60,6 +61,23 @@ export async function handleSchedulePosts(interaction) {
 
     const postLink = interaction.options.getString('postlink');
     const time = interaction.options.getString('time');
+
+    try {
+        const post = await redditService.getPost(postLink);
+        if (!post) {
+            await interaction.editReply({
+                content: 'No post exists with the provided link. Please check the link and try again.',
+                flags: 64,
+            });
+            return;
+        }
+    } catch (error) {
+        await interaction.editReply({
+            content: 'Failed to fetch the post. Please check the link and try again.',
+            flags: 64,
+        });
+        return;
+    }
 
     let epochTime = parseInt(time, 10);
 

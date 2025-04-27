@@ -23,7 +23,7 @@ export class RedditService {
         }
     }
 
-    async getPostTitle(postLink) {
+    async getPost(postLink) {
         try {
             const postIdMatch = postLink.match(/comments\/([a-z0-9]+)/i);
             if (!postIdMatch || postIdMatch.length < 2) {
@@ -33,6 +33,20 @@ export class RedditService {
             const postId = postIdMatch[1];
             const post = await this.r.getSubmission(postId).fetch();
 
+            if (post.subreddit.display_name.toLowerCase() !== 'igcse') {
+                throw new Error('The post does not belong to the r/igcse subreddit.');
+            }
+
+            return post;
+        } catch (error) {
+            console.error('Error fetching post:', error.message);
+            throw new Error('Failed to fetch post. Please ensure the link is valid and belongs to r/igcse.');
+        }
+    }
+
+    async getPostTitle(postLink) {
+        try {
+            const post = await this.getPost(postLink);
             return post.title;
         } catch (error) {
             console.error('Error fetching post title:', error);
@@ -42,12 +56,8 @@ export class RedditService {
 
     async lockPost(postLink) {
         try {
-            const postId = postLink.split('/comments/')[1]?.split('/')[0];
-            if (!postId) {
-                throw new Error('Invalid post link format');
-            }
-            const submission = await this.r.getSubmission(postId);
-            await submission.lock();
+            const post = await this.getPost(postLink);
+            await post.lock();
             console.log(`Post locked: ${postLink}`);
         } catch (error) {
             console.error(`Failed to lock post ${postLink}:`, error);
@@ -56,12 +66,8 @@ export class RedditService {
 
     async unlockPost(postLink) {
         try {
-            const postId = postLink.split('/comments/')[1]?.split('/')[0];
-            if (!postId) {
-                throw new Error('Invalid post link format');
-            }
-            const submission = await this.r.getSubmission(postId);
-            await submission.unlock();
+            const post = await this.getPost(postLink);
+            await post.unlock();
             console.log(`Post unlocked: ${postLink}`);
         } catch (error) {
             console.error(`Failed to unlock post ${postLink}:`, error);
@@ -70,14 +76,7 @@ export class RedditService {
 
     async getPostStatus(postLink) {
         try {
-            const postIdMatch = postLink.match(/comments\/([a-z0-9]+)/i);
-            if (!postIdMatch || postIdMatch.length < 2) {
-                throw new Error('Invalid post link format. Could not extract post ID.');
-            }
-    
-            const postId = postIdMatch[1];
-            const post = await this.r.getSubmission(postId).fetch();
-    
+            const post = await this.getPost(postLink);
             return {
                 isLocked: post.locked,
             };
