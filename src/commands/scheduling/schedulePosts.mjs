@@ -248,7 +248,6 @@ async function handleListCommand(interaction, logService) {
                 ? await Promise.all(pendingLocks.map(async action => {
                     try {
                         const redditService = new RedditService();
-                        const postTitle = await redditService.getPostTitle(action.postLink);
                         return {
                             name: `${pendingLocks.indexOf(action) + 1}. (POST LINK) [${action.postLink}] || 'Unknown Post'`,
                             value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
@@ -270,13 +269,11 @@ async function handleListCommand(interaction, logService) {
                 ? await Promise.all(pendingUnlocks.map(async action => {
                     try {
                         const redditService = new RedditService();
-                        const postTitle = await redditService.getPostTitle(action.postLink);
                         return {
                             name: `${pendingUnlocks.indexOf(action) + 1}. (POST LINK) [${action.postLink}] || 'Unknown Post'`,
                             value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
                         };
                     } catch (error) {
-                        // Default to "Unknown Post" if fetching the post fails
                         return {
                             name: `${pendingUnlocks.indexOf(action) + 1}. Unknown Post`,
                             value: `Link: [here](${action.postLink})\nError: Failed to fetch post title.`,
