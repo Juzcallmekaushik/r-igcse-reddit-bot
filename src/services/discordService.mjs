@@ -38,6 +38,18 @@ export class DiscordService {
     this.client.once('ready', async () => {
       console.log(`[-] Logged in as ${this.client.user.tag}`);
 
+      const rest = new REST({ version: '10' }).setToken(token);
+      try {
+        console.log('[-] Registering commands...');
+        await rest.put(
+          Routes.applicationCommands(this.client.user.id),
+          { body: [schedulePostCommands] }
+        );
+        console.log('[-] Commands registered successfully.');
+      } catch (error) {
+        console.error('⚠️ - Failed to register commands:', error.message);
+      }
+
       this.client.user.setActivity('r/IGCSE Subreddit', {
         type: ActivityType.Watching,
       });
@@ -49,31 +61,30 @@ export class DiscordService {
     this.client.on('interactionCreate', async (interaction) => {
       if (!interaction.isCommand()) return;
 
-      if (interaction.commandName.startsWith('schedule')) {
-        try {
+      try {
+        if (interaction.commandName.startsWith('schedule')) {
           if (!interaction.deferred && !interaction.replied) {
             await interaction.deferReply({ flags: 64 });
           }
-
           const result = await handleSchedulePosts(interaction);
 
           await interaction.editReply({
             content: result,
           });
-        } catch (error) {
-          await this.logService.logErrorToChannel(error, 'Interaction Handling', interaction);
+        }
+      } catch (error) {
+        await this.logService.logErrorToChannel(error, 'Interaction Handling', interaction);
 
-          if (interaction.deferred) {
-            await interaction.editReply({
-              content: 'Failed to schedule the action. Please try again later.',
-            });
-          }
+        if (interaction.deferred) {
+          await interaction.editReply({
+            content: 'Failed to process the command. Please try again later.',
+          });
+        }
 
-          if (interaction.channel) {
-            await interaction.channel.send({
-              content: `An error occurred while processing your command: ${error.message}`,
-            });
-          }
+        if (interaction.channel) {
+          await interaction.channel.send({
+            content: `An error occurred while processing your command: ${error.message}`,
+          });
         }
       }
     });
@@ -131,5 +142,5 @@ export class DiscordService {
         await this.logService.logErrorToChannel('Error fetching post:', error);
         throw new Error('Failed to fetch post. Please ensure the link is valid and belongs to r/igcse.');
     }
-}
+  }
 }

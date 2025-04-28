@@ -152,7 +152,7 @@ interaction.member.roles.cache.has('1366069579402575952') ||
                             epochTime,
                             scheduledBy: interaction.user.username,
                             guildid: interaction.guild.id,
-                            channelId: interaction.channel.id, // Store the channel ID
+                            channelId: interaction.channel.id,
                             createdAt: new Date()
                         });
 
@@ -250,11 +250,10 @@ async function handleListCommand(interaction, logService) {
                         const redditService = new RedditService();
                         const postTitle = await redditService.getPostTitle(action.postLink);
                         return {
-                            name: `${pendingLocks.indexOf(action) + 1}. ${postTitle || 'Unknown Post'}`,
+                            name: `${pendingLocks.indexOf(action) + 1}. (POST LINK) [${action.postLink}] || 'Unknown Post'`,
                             value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
                         };
                     } catch (error) {
-                        // Default to "Unknown Post" if fetching the post fails
                         return {
                             name: `${pendingLocks.indexOf(action) + 1}. Unknown Post`,
                             value: `Link: [here](${action.postLink})\nError: Failed to fetch post title.`,
@@ -273,7 +272,7 @@ async function handleListCommand(interaction, logService) {
                         const redditService = new RedditService();
                         const postTitle = await redditService.getPostTitle(action.postLink);
                         return {
-                            name: `${pendingUnlocks.indexOf(action) + 1}. ${postTitle || 'Unknown Post'}`,
+                            name: `${pendingUnlocks.indexOf(action) + 1}. (POST LINK) [${action.postLink}] || 'Unknown Post'`,
                             value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
                         };
                     } catch (error) {
