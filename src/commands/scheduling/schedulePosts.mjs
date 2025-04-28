@@ -288,8 +288,33 @@ async function handleListCommand(interaction, logService) {
             color: 0x00FFFF
         };
 
+        const embeds = [];
+        if (lockEmbed.fields.length > 25) {
+            for (let i = 0; i < lockEmbed.fields.length; i += 25) {
+                embeds.push({
+                    title: lockEmbed.title,
+                    fields: lockEmbed.fields.slice(i, i + 25),
+                    color: lockEmbed.color,
+                });
+            }
+        } else {
+            embeds.push(lockEmbed);
+        }
+
+        if (unlockEmbed.fields.length > 25) {
+            for (let i = 0; i < unlockEmbed.fields.length; i += 25) {
+                embeds.push({
+                    title: unlockEmbed.title,
+                    fields: unlockEmbed.fields.slice(i, i + 25),
+                    color: unlockEmbed.color,
+                });
+            }
+        } else {
+            embeds.push(unlockEmbed);
+        }
+
         await interaction.editReply({
-            embeds: [lockEmbed, unlockEmbed],
+            embeds,
             flags: 64,
         });
     } catch (error) {
