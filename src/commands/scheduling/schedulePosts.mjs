@@ -242,10 +242,12 @@ async function handleListCommand(interaction, logService) {
         const pendingLocks = actions.filter(action => action.action === 'lock');
         const pendingUnlocks = actions.filter(action => action.action === 'unlock');
 
-        const lockEmbed = {
-            title: 'Pending Locks',
-            fields: pendingLocks.length > 0
-                ? await Promise.all(pendingLocks.map(async action => {
+        const embeds = [];
+
+        if (pendingLocks.length > 0) {
+            const lockEmbed = {
+                title: 'Pending Locks',
+                fields: await Promise.all(pendingLocks.map(async action => {
                     try {
                         const redditService = new RedditService();
                         const postTitle = await redditService.getPostTitle(action.postLink);
@@ -254,21 +256,32 @@ async function handleListCommand(interaction, logService) {
                             value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
                         };
                     } catch (error) {
-                        // Default to "Unknown Post" if fetching the post fails
                         return {
                             name: `${pendingLocks.indexOf(action) + 1}. Unknown Post`,
                             value: `Link: [here](${action.postLink})\nError: Failed to fetch post title.`,
                         };
                     }
-                }))
-                : [{ name: 'No pending locks', value: 'There are no pending locks.' }],
-            color: 0xFFA500
-        };
+                })),
+                color: 0xFFA500
+            };
 
-        const unlockEmbed = {
-            title: 'Pending Unlocks',
-            fields: pendingUnlocks.length > 0
-                ? await Promise.all(pendingUnlocks.map(async action => {
+            if (lockEmbed.fields.length > 25) {
+                for (let i = 0; i < lockEmbed.fields.length; i += 25) {
+                    embeds.push({
+                        title: lockEmbed.title,
+                        fields: lockEmbed.fields.slice(i, i + 25),
+                        color: lockEmbed.color,
+                    });
+                }
+            } else {
+                embeds.push(lockEmbed);
+            }
+        }
+
+        if (pendingUnlocks.length > 0) {
+            const unlockEmbed = {
+                title: 'Pending Unlocks',
+                fields: await Promise.all(pendingUnlocks.map(async action => {
                     try {
                         const redditService = new RedditService();
                         const postTitle = await redditService.getPostTitle(action.postLink);
@@ -277,40 +290,34 @@ async function handleListCommand(interaction, logService) {
                             value: `Link: [here](${action.postLink})\nTime: <t:${Math.floor(action.epochTime / 1000)}:F> (<t:${Math.floor(action.epochTime / 1000)}:R>)`
                         };
                     } catch (error) {
-                        // Default to "Unknown Post" if fetching the post fails
                         return {
                             name: `${pendingUnlocks.indexOf(action) + 1}. Unknown Post`,
                             value: `Link: [here](${action.postLink})\nError: Failed to fetch post title.`,
                         };
                     }
-                }))
-                : [{ name: 'No pending unlocks', value: 'There are no pending unlocks.' }],
-            color: 0x00FFFF
-        };
+                })),
+                color: 0x00FFFF
+            };
 
-        const embeds = [];
-        if (lockEmbed.fields.length > 25) {
-            for (let i = 0; i < lockEmbed.fields.length; i += 25) {
-                embeds.push({
-                    title: lockEmbed.title,
-                    fields: lockEmbed.fields.slice(i, i + 25),
-                    color: lockEmbed.color,
-                });
+            if (unlockEmbed.fields.length > 25) {
+                for (let i = 0; i < unlockEmbed.fields.length; i += 25) {
+                    embeds.push({
+                        title: unlockEmbed.title,
+                        fields: unlockEmbed.fields.slice(i, i + 25),
+                        color: unlockEmbed.color,
+                    });
+                }
+            } else {
+                embeds.push(unlockEmbed);
             }
-        } else {
-            embeds.push(lockEmbed);
         }
 
-        if (unlockEmbed.fields.length > 25) {
-            for (let i = 0; i < unlockEmbed.fields.length; i += 25) {
-                embeds.push({
-                    title: unlockEmbed.title,
-                    fields: unlockEmbed.fields.slice(i, i + 25),
-                    color: unlockEmbed.color,
-                });
-            }
-        } else {
-            embeds.push(unlockEmbed);
+        if (embeds.length === 0) {
+            await interaction.editReply({
+                content: 'There are no pending scheduled actions.',
+                flags: 64,
+            });
+            return;
         }
 
         await interaction.editReply({
