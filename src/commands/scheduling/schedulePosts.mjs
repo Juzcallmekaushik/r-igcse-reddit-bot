@@ -118,7 +118,7 @@ interaction.member.roles.cache.has('1366069579402575952') ||
     const action = subcommand === 'lock' ? 'lock' : 'unlock';
 
     try {
-        const existingAction = await fetchData('scheduledActions', { postLink, guildid: interaction.guild.id });
+        const existingAction = await fetchData('scheduledActions', { postLink, action, guildid: interaction.guild.id });
 
         if (existingAction.length > 0) {
             const row = new ActionRowBuilder()
@@ -134,7 +134,7 @@ interaction.member.roles.cache.has('1366069579402575952') ||
                 );
 
             await interaction.editReply({
-                content: 'This post has already been scheduled. Would you like to overwrite it?',
+                content: 'This post has already been scheduled for this action. Would you like to overwrite it?',
                 components: [row],
                 flags: 64,
             });
@@ -145,14 +145,14 @@ interaction.member.roles.cache.has('1366069579402575952') ||
             collector.on('collect', async i => {
                 if (i.customId === 'overwrite_yes') {
                     try {
-                        await deleteData('scheduledActions', { postLink, guildid: interaction.guild.id });
+                        await deleteData('scheduledActions', { postLink, action, guildid: interaction.guild.id });
                         await insertData('scheduledActions', {
                             action,
                             postLink,
                             epochTime,
                             scheduledBy: interaction.user.username,
                             guildid: interaction.guild.id,
-                            channelId: interaction.channel.id, // Store the channel ID
+                            channelId: interaction.channel.id,
                             createdAt: new Date()
                         });
 
