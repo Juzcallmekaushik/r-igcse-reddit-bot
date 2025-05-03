@@ -11,10 +11,11 @@ import {
   schedulePostCommands,
   handleSchedulePosts,
   startScheduledActionProcessor 
-} from '../commands/scheduling/schedulePosts.mjs';
+} from '../commands/posts/schedulePosts.mjs';
 
-import { LogService } from '../services/LogService.mjs';
-import { RedditService } from '../services/redditService.mjs';
+import { LogService } from './LogService.mjs';
+import { RedditService } from './redditService.mjs';
+import {discussionPostCommands, handleDiscussionPosts} from "../commands/posts/discussionPosts.mjs";
 
 dotenv.config();
 
@@ -43,7 +44,12 @@ export class DiscordService {
         console.log('[-] Registering commands...');
         await rest.put(
           Routes.applicationCommands(this.client.user.id),
-          { body: [schedulePostCommands] }
+            {
+              body: [
+                ...schedulePostCommands,
+                ...discussionPostCommands
+              ]
+            }
         );
         console.log('[-] Commands registered successfully.');
       } catch (error) {
@@ -71,6 +77,12 @@ export class DiscordService {
           await interaction.editReply({
             content: result,
           });
+        }
+        else if (interaction.commandName === 'create_discussion_post') {
+          if (!interaction.deferred && !interaction.replied) {
+            await interaction.deferReply({ ephemeral: true })
+          }
+          await handleDiscussionPosts(interaction)
         }
       } catch (error) {
         await this.logService.logErrorToChannel(error, 'Interaction Handling', interaction);

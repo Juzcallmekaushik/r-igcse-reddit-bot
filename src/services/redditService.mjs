@@ -85,4 +85,15 @@ export class RedditService {
             throw new Error('Failed to fetch post status.');
         }
     }
+
+    async createSelfPost(subredditName, title, text, flairTemplateId) {
+        return this.r
+            .getSubreddit(subredditName)
+            .submitSelfpost({
+                title,
+                text,
+                flairId: flairTemplateId,
+                sendReplies: false
+            });
+    }
 }
