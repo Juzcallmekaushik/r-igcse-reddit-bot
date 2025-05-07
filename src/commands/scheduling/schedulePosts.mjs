@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { RedditService } from '../../services/redditService.mjs';
 import { insertData, deleteData, fetchData } from '../../services/mongoService.mjs';
-import { LogService } from '../../services/LogService.mjs';
+import { LogService } from '../../services/logService.mjs';
 
 export const schedulePostCommands = [
     new SlashCommandBuilder()

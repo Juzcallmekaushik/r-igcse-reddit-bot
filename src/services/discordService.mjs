@@ -13,7 +13,7 @@ import {
   startScheduledActionProcessor 
 } from '../commands/scheduling/schedulePosts.mjs';
 
-import { LogService } from '../services/LogService.mjs';
+import { LogService } from '../services/logService.mjs';
 import { RedditService } from '../services/redditService.mjs';
 
 dotenv.config();
