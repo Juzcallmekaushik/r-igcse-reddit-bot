@@ -11,9 +11,14 @@ import {
   schedulePostCommands,
   handleSchedulePosts,
   startScheduledActionProcessor 
-} from '../commands/scheduling/schedulePosts.mjs';
+} from '../commands/schedule/scheduleLocks.mjs';
 
-import { LogService } from '../services/LogService.mjs';
+import {
+  discussionPostCommands,
+  handleDiscussionPosts,
+} from '../commands/post/schedulePosts.mjs';
+
+import { LogService } from './logService.mjs';
 import { RedditService } from '../services/redditService.mjs';
 
 dotenv.config();
@@ -43,7 +48,7 @@ export class DiscordService {
         console.log('[-] Registering commands...');
         await rest.put(
           Routes.applicationCommands(this.client.user.id),
-          { body: [schedulePostCommands] }
+          { body: [...schedulePostCommands, ...discussionPostCommands] }
         );
         console.log('[-] Commands registered successfully.');
       } catch (error) {
@@ -69,7 +74,17 @@ export class DiscordService {
           const result = await handleSchedulePosts(interaction);
 
           await interaction.editReply({
-            content: result,
+            content: String(result),
+          });
+        };
+        if (interaction.commandName.startsWith('post')) {
+          if (!interaction.deferred && !interaction.replied) {
+            await interaction.deferReply({ flags: 64 });
+          }
+          const result = await handleDiscussionPosts(interaction);
+
+          await interaction.editReply({
+            content: String(result),
           });
         }
       } catch (error) {
@@ -78,12 +93,7 @@ export class DiscordService {
         if (interaction.deferred) {
           await interaction.editReply({
             content: 'Failed to process the command. Please try again later.',
-          });
-        }
-
-        if (interaction.channel) {
-          await interaction.channel.send({
-            content: `An error occurred while processing your command: ${error.message}`,
+            flags: 64,
           });
         }
       }
