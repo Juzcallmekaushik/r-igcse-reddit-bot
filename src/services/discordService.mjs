@@ -43,7 +43,7 @@ export class DiscordService {
         console.log('[-] Registering commands...');
         await rest.put(
           Routes.applicationCommands(this.client.user.id),
-          { body: [schedulePostCommands] }
+          { body: schedulePostCommands }
         );
         console.log('[-] Commands registered successfully.');
       } catch (error) {
