@@ -11,12 +11,12 @@ import {
   schedulePostCommands,
   handleSchedulePosts,
   startScheduledActionProcessor 
-} from '../commands/scheduling/schedulePosts.mjs';
+} from '../commands/schedule/schedulePosts.mjs';
 
 import { LogService } from '../services/logService.mjs';
 import { RedditService } from '../services/redditService.mjs';
+import { monitorSubreddit } from '../events/AutoMod.mjs';
 import fetchAndSendNewPostsImmediately from '../events/NewPost.mjs';
-
 
 dotenv.config();
 
@@ -50,6 +50,10 @@ export class DiscordService {
       startScheduledActionProcessor(this.client);
       await this.sendLoginEmbed(logChannelIds);
       fetchAndSendNewPostsImmediately().then(() => {
+        
+      });
+
+      monitorSubreddit().then(() => {
       });
     });
 
@@ -99,7 +103,12 @@ export class DiscordService {
       if (JSON.stringify(existingCommands) !== JSON.stringify(schedulePostCommands)) {
         await rest.put(
           Routes.applicationCommands(this.client.user.id),
-          { body: schedulePostCommands }
+            {
+              body: 
+              [
+                ...schedulePostCommands,
+              ]
+            }
         );
         console.log('[-] Commands registered successfully.');
       } else {

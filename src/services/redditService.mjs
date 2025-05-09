@@ -88,10 +88,7 @@ export class RedditService {
 
     async getNewPosts(subreddit) {
         try {
-            console.log(`[RedditService] Fetching new posts from r/${subreddit}...`);
             const posts = await this.r.getSubreddit(subreddit).getNew({ limit: 10 });
-            console.log(`[RedditService] Raw posts fetched:`, posts);
-    
             return posts.map(post => ({
                 id: post.id,
                 title: post.title,
@@ -102,6 +99,19 @@ export class RedditService {
         } catch (error) {
             console.error(`[RedditService] Error fetching new posts from r/${subreddit}:`, error.message);
             throw new Error(`Failed to fetch new posts from r/${subreddit}.`);
+        }
+    }
+    async createPostReply(postLink, replyText) {
+        try {
+            const post = await this.getPost(postLink);
+            const reply = await post.reply(replyText);
+            return {
+                id: reply.id,
+                body: reply.body,
+                created_utc: reply.created_utc,
+            };
+        } catch (error) {
+            throw new Error('Failed to create post reply.');
         }
     }
 }
