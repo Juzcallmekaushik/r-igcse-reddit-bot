@@ -85,7 +85,7 @@ export class DiscordService {
     });
 
     this.client.login(token);
-    DiscordService.instance = this; // Save the instance
+    DiscordService.instance = this;
   }
 
   async registerCommands(token) {
@@ -96,7 +96,6 @@ export class DiscordService {
         Routes.applicationCommands(this.client.user.id)
       );
 
-      // Compare existing commands with the new ones
       if (JSON.stringify(existingCommands) !== JSON.stringify(schedulePostCommands)) {
         await rest.put(
           Routes.applicationCommands(this.client.user.id),
@@ -140,59 +139,5 @@ export class DiscordService {
     } catch (err) {
       console.error('⚠️ Failed to fetch Reddit user or send login embed:', err.message);
     }
-  }
-
-  async getPost(postLink) {
-    try {
-        const postIdMatch = postLink.match(/comments\/([a-z0-9]+)/i);
-        if (!postIdMatch || postIdMatch.length < 2) {
-            throw new Error('Invalid post link format. Could not extract post ID.');
-        }
-
-        const postId = postIdMatch[1];
-        const post = await this.r.getSubmission(postId).fetch();
-
-        if (post.subreddit.display_name.toLowerCase() !== 'igcse') {
-            throw new Error(`The post belongs to the subreddit "${post.subreddit.display_name}", not "r/igcse".`);
-        }
-
-        return post;
-    } catch (error) {
-        await this.logService.logErrorToChannel('Error fetching post:', error);
-        throw new Error('Failed to fetch post. Please ensure the link is valid and belongs to r/igcse.');
-    }
-  }
-
-  async startAutoMod() {
-    const subreddit = 'igcse';
-    const discordChannelId = '1369535067592065034';
-
-    const fetchAndSendNewPosts = async () => {
-      try {
-        const newPosts = await this.redditService.getNewPosts(subreddit);
-
-        if (!newPosts || newPosts.length === 0) {
-          console.log(`[AutoMod] No new posts found in r/${subreddit}.`);
-          return;
-        }
-
-        for (const post of newPosts) {
-          const message = `**${post.title}**\n${post.url}\nPosted by u/${post.author}`;
-          const channel = await this.client.channels.fetch(discordChannelId);
-
-          if (channel && channel.isTextBased()) {
-            await channel.send(message);
-            console.log(`[AutoMod] Sent post "${post.title}" to Discord channel ${discordChannelId}.`);
-          } else {
-            console.error(`[AutoMod] Failed to send post to channel ${discordChannelId}.`);
-          }
-        }
-      } catch (error) {
-        console.error(`[AutoMod] Error fetching or sending posts: ${error.message}`);
-      }
-    };
-
-    // Run AutoMod every 5 minutes
-    setInterval(fetchAndSendNewPosts, 5 * 60 * 1000);
   }
 }
