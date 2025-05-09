@@ -85,4 +85,20 @@ export class RedditService {
             throw new Error('Failed to fetch post status.');
         }
     }
+
+    async getNewPosts(subreddit) {
+        try {
+          const posts = await this.r.getSubreddit(subreddit).getNew({ limit: 10 });
+          return posts.map(post => ({
+            id: post.id,
+            title: post.title,
+            url: `https://www.reddit.com${post.permalink}`,
+            author: post.author.name,
+            created_utc: post.created_utc,
+          }));
+        } catch (error) {
+          console.error(`[RedditService] Error fetching new posts from r/${subreddit}:`, error.message);
+          throw new Error(`Failed to fetch new posts from r/${subreddit}.`);
+        }
+      }
 }
