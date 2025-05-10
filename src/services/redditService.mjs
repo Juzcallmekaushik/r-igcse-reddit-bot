@@ -101,17 +101,4 @@ export class RedditService {
             throw new Error(`Failed to fetch new posts from r/${subreddit}.`);
         }
     }
-    async createPostReply(postLink, replyText) {
-        try {
-            const post = await this.getPost(postLink);
-            const reply = await post.reply(replyText);
-            return {
-                id: reply.id,
-                body: reply.body,
-                created_utc: reply.created_utc,
-            };
-        } catch (error) {
-            throw new Error('Failed to create post reply.');
-        }
-    }
 }
