@@ -11,7 +11,6 @@ export class RedditService {
             clientSecret: process.env.REDDIT_CLIENT_SECRET,
             username: process.env.REDDIT_USERNAME,
             password: process.env.REDDIT_PASSWORD,
-            continueAfterRatelimitError: true,
         });
     }
 
