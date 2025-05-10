@@ -6,16 +6,13 @@ import {
   Routes,
   ActivityType
 } from 'discord.js';
-
 import {
   schedulePostCommands,
   handleSchedulePosts,
   startScheduledActionProcessor 
 } from '../commands/schedule/schedulePosts.mjs';
-
 import { LogService } from '../services/logService.mjs';
 import { RedditService } from '../services/redditService.mjs';
-import { monitorSubreddit } from '../events/AutoMod.mjs';
 import fetchAndSendNewPostsImmediately from '../events/NewPost.mjs';
 
 dotenv.config();
@@ -51,9 +48,6 @@ export class DiscordService {
       await this.sendLoginEmbed(logChannelIds);
       fetchAndSendNewPostsImmediately().then(() => {
         
-      });
-
-      monitorSubreddit().then(() => {
       });
     });
 
@@ -106,7 +100,7 @@ export class DiscordService {
             {
               body: 
               [
-                ...schedulePostCommands,
+                ...schedulePostCommands
               ]
             }
         );
