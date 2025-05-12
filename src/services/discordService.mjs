@@ -53,9 +53,7 @@ export class DiscordService {
       startScheduledActionProcessor(this.client);
       monitorUnlocks(this.client);
       await this.sendLoginEmbed(logChannelIds);
-      fetchAndSendNewPostsImmediately().then(() => {
-        
-      });
+      fetchAndSendNewPostsImmediately();
     });
 
     this.client.on('interactionCreate', async (interaction) => {
@@ -67,19 +65,13 @@ export class DiscordService {
             await interaction.deferReply({ flags: 64 });
           }
           const result = await handleSchedulePosts(interaction);
-
-          await interaction.editReply({
-            content: result,
-          });
+          await interaction.editReply({ content: result });
         } else if (interaction.commandName.startsWith('create')) {
           if (!interaction.deferred && !interaction.replied) {
             await interaction.deferReply({ flags: 64 });
           }
           const result = await handleCreatePosts(interaction);
-
-          await interaction.editReply({
-            content: result,
-          });
+          await interaction.editReply({ content: result });
         }
       } catch (error) {
         await this.logService.logErrorToChannel(error, 'Interaction Handling', interaction);
@@ -104,26 +96,51 @@ export class DiscordService {
 
   async registerCommands(token) {
     const rest = new REST({ version: '10' }).setToken(token);
-    try {
-        console.log('[-] Registering commands...');
-        const commands = [
-            ...schedulePostCommands,
-            ...createPostCommands,
-        ];
+    console.log('[-] Registering commands...');
 
-        await rest.put(
-            Routes.applicationCommands(this.client.user.id),
-            { body: commands }
-        );
-        console.log('[-] Commands registered successfully.');
+    const newCommands = [
+      ...schedulePostCommands,
+      ...createPostCommands,
+    ];
+
+    try {
+      // Get current registered commands
+      const existingCommands = await rest.get(
+        Routes.applicationCommands(this.client.user.id)
+      );
+
+      const newCommandNames = newCommands.map(cmd => cmd.name);
+
+      // Delete outdated commands first
+      for (const cmd of existingCommands) {
+        if (!newCommandNames.includes(cmd.name)) {
+          console.log(`[-] Deleting old command: ${cmd.name}`);
+          try {
+            await rest.delete(
+              Routes.applicationCommand(this.client.user.id, cmd.id)
+            );
+            console.log(`[✓] Deleted: ${cmd.name}`);
+          } catch (deleteErr) {
+            console.warn(`⚠️ Could not delete ${cmd.name}: ${deleteErr.message}`);
+          }
+        }
+      }
+
+      // Register updated commands
+      await rest.put(
+        Routes.applicationCommands(this.client.user.id),
+        { body: newCommands }
+      );
+
+      console.log('[-] Commands registered successfully.');
     } catch (error) {
-        console.error('⚠️ - Failed to register commands:', error.message);
+      console.error('⚠️ - Failed to register commands:', error.message);
     }
   }
 
   async sendLoginEmbed(logChannelIds) {
     try {
-      const redditUser = await this.redditService.r.getMe();    
+      const redditUser = await this.redditService.r.getMe();
       const embed = {
         author: {
           name: this.client.user.tag,
