@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import { RedditService } from '../../services/redditService.mjs';
 import { insertData, deleteData, fetchData } from '../../services/mongoService.mjs';
 import { LogService } from '../../services/logService.mjs';
@@ -22,7 +22,7 @@ export const createPostCommands = [
 ].map(command => command.toJSON());
 
 export async function handleCreatePosts(interaction) {
-    const logService = new LogService(interaction.client, [
+    new LogService(interaction.client, [
         '1365518941450932224',
         '1365561748341395577',
         '1365595878525636681',
@@ -72,7 +72,23 @@ export async function handleCreatePosts(interaction) {
             return;
         }
 
+        // Filter out duplicates from jsonData
+        const uniqueEntries = [];
+        const seenEntriesForJson = new Set();
+
         for (const entry of jsonData) {
+            const uniqueKey = `${entry.board}-${entry.subject_code}-${entry.paper_code}`;
+            if (!seenEntriesForJson.has(uniqueKey)) {
+                seenEntriesForJson.add(uniqueKey);
+                uniqueEntries.push(entry);
+            }
+        }
+
+        if (uniqueEntries.length < jsonData.length) {
+            console.log(`Removed ${jsonData.length - uniqueEntries.length} duplicate entries.`);
+        }
+
+        for (const entry of uniqueEntries) {
             const { board, subject, subject_code, paper_code, unlock_time, post_time, lock } = entry;
 
             const posttime = post_time === "now" ? Math.floor(Date.now() / 1000).toString() : post_time;
@@ -161,7 +177,8 @@ We appreciate your understanding and cooperation.
                             title: `${board} ${details} Paper Discussion Thread`,
                             url: searchResult.url,
                             unlocktime: Number(unlocktime),
-                            lock: lock
+                            lock: lock,
+                            guildId: interaction.guild.id,
                         };
 
                         await insertData('scheduledBulk', thread);
@@ -176,6 +193,7 @@ We appreciate your understanding and cooperation.
                             subject_code,
                             paper_code,
                             url: searchResult.url,
+                            guildId: interaction.guild.id,
                         });
                     } else {
                         console.log('No matching post found.');
@@ -191,14 +209,76 @@ We appreciate your understanding and cooperation.
             }
         }
 
-        const fetchedBulkData = await fetchData('bulkFetch', { index_number: `${new Date().toISOString().split('T')[0].replace(/-/g, '')}` });
+        // Remove duplicates from the database
+        const fetchedBulkData = await fetchData('bulkFetch', { guildId: interaction.guild.id });
+        const seenEntries = new Set();
+
+        for (const record of fetchedBulkData) {
+            const uniqueKey = `${record.board}-${record.subject_code}-${record.paper_code}`;
+            if (seenEntries.has(uniqueKey)) {
+                // Delete duplicate entry from the database
+                await deleteData('bulkFetch', { _id: record._id });
+                console.log(`Removed duplicate entry: ${uniqueKey}`);
+            } else {
+                seenEntries.add(uniqueKey);
+            }
+        }
+
+        // Fetch the cleaned data after removing duplicates
+        const cleanedBulkData = await fetchData('bulkFetch', { guildId: interaction.guild.id });
+
+        const groupedData = cleanedBulkData.reduce((acc, record) => {
+            const key = `${record.board} ${record.subject_code}`;
+            if (!acc[key]) {
+                acc[key] = [];
+            }
+            acc[key].push(`[P${record.paper_code}](${record.url})`);
+            return acc;
+        }, {});
+
+        const formattedMessage = `
+**Greetings,**
+---
+
+**These are the ${new Date().toLocaleString('en-GB', { month: 'long', day: 'numeric' })} Discussion Threads:**
+
+${Object.entries(groupedData)
+    .map(
+        ([subject, papers]) =>
+        `**${subject}** – ${papers.join(', ')}`
+    )
+    .join('\n')}
+
+---
+
+**IMPORTANT NOTICE ⚠️**
+---
+
+- Firstly, [r/IGCSE](https://www.reddit.com/r/IGCSE/) does not tolerate any form of [malpractice](https://www.reddit.com/r/igcse/wiki/rules/), such as asking for or sharing examination material before its official release. This rule **includes jokes about sharing or asking for leaks**. Any users found to violate these rules will be banned from the subreddit without warning.
+
+- Secondly, **paper discussion may only take place in posts with the "May/June 2025 Paper Discussion Thread".** These threads are created by the subreddit moderation team. **Do not make any posts pertaining to paper discussion yourself or comment on such posts.** If a post for your exam does not exist, please [message the moderators](https://www.reddit.com/message/compose?to=/r/igcse), and we will create one for you.
+
+To find the discussion thread for your exam, click on the orange "May/June 2025 Paper Discussion" Flair under the title of this post. Doing so will show you all the discussion posts for the session. Alternatively, you can [click here](https://www.reddit.com/r/igcse/?f=flair_name%3A%22May%2FJune%202025%20Paper%20Discussion%22) to view all the discussion posts.
+
+---
+
+We appreciate your cooperation and wish you the best of luck for your exams.
+
+— The [r/IGCSE](https://www.reddit.com/r/IGCSE/) Moderation Team
+`;
+
+        await interaction.channel.send({
+            content: `\`\`\`${formattedMessage.trim().replace(/^\s+/gm, '')}\`\`\``,
+        });
         const embed = {
             title: `${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} Scheduled Posts`,
             inline: false,
-            fields: fetchedBulkData.map(record => ({
-                name: `${record.subject_code} ${record.paper_code}`,
-                value: `[here](${record.url})`,
+            fields: [
+            ...Object.entries(groupedData).map(([subject, papers]) => ({
+                name: subject,
+                value: papers.join(', '),
             })),
+            ],
         };
 
         await interaction.editReply({
@@ -215,7 +295,7 @@ We appreciate your understanding and cooperation.
         }
     }
 
-export function monitorUnlocks(client) {
+export function monitorUnlocks() {
     const redditService = new RedditService();
     setInterval(async () => {
         try {
