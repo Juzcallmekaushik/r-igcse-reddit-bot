@@ -217,7 +217,6 @@ We appreciate your understanding and cooperation.
 
 export function monitorUnlocks(client) {
     const redditService = new RedditService();
-
     setInterval(async () => {
         try {
             const currentTime = Math.floor(Date.now() / 1000);
