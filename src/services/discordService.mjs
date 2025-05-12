@@ -105,28 +105,19 @@ export class DiscordService {
   async registerCommands(token) {
     const rest = new REST({ version: '10' }).setToken(token);
     try {
-      console.log('[-] Registering commands...');
-      const existingCommands = await rest.get(
-        Routes.applicationCommands(this.client.user.id)
-      );
+        console.log('[-] Registering commands...');
+        const commands = [
+            ...schedulePostCommands,
+            ...createPostCommands,
+        ];
 
-      if (JSON.stringify(existingCommands) !== JSON.stringify(schedulePostCommands)) {
         await rest.put(
-          Routes.applicationCommands(this.client.user.id),
-            {
-              body: 
-              [
-                ...schedulePostCommands,
-                ...createPostCommands,
-              ]
-            }
+            Routes.applicationCommands(this.client.user.id),
+            { body: commands }
         );
         console.log('[-] Commands registered successfully.');
-      } else {
-        console.log('[-] Commands are already registered. Skipping registration.');
-      }
     } catch (error) {
-      console.error('⚠️ - Failed to register commands:', error.message);
+        console.error('⚠️ - Failed to register commands:', error.message);
     }
   }
 
