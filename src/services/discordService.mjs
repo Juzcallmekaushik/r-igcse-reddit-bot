@@ -11,6 +11,12 @@ import {
   handleSchedulePosts,
   startScheduledActionProcessor 
 } from '../commands/schedule/schedulePosts.mjs';
+import {
+  createPostCommands,
+  handleCreatePosts,
+  monitorUnlocks,
+} from '../commands/create/createBulk.mjs';
+
 import { LogService } from '../services/logService.mjs';
 import { RedditService } from '../services/redditService.mjs';
 import fetchAndSendNewPostsImmediately from '../events/NewPost.mjs';
@@ -45,6 +51,7 @@ export class DiscordService {
         type: ActivityType.Watching,
       });
       startScheduledActionProcessor(this.client);
+      monitorUnlocks(this.client);
       await this.sendLoginEmbed(logChannelIds);
       fetchAndSendNewPostsImmediately().then(() => {
         
@@ -60,6 +67,15 @@ export class DiscordService {
             await interaction.deferReply({ flags: 64 });
           }
           const result = await handleSchedulePosts(interaction);
+
+          await interaction.editReply({
+            content: result,
+          });
+        } else if (interaction.commandName.startsWith('create')) {
+          if (!interaction.deferred && !interaction.replied) {
+            await interaction.deferReply({ flags: 64 });
+          }
+          const result = await handleCreatePosts(interaction);
 
           await interaction.editReply({
             content: result,
@@ -100,7 +116,8 @@ export class DiscordService {
             {
               body: 
               [
-                ...schedulePostCommands
+                ...schedulePostCommands,
+                ...createPostCommands,
               ]
             }
         );

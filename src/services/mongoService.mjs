@@ -3,59 +3,70 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+let client;
+let isConnected = false;
+
+async function connectToDatabase() {
+    if (!client) {
+        client = new MongoClient(uri);
+    }
+    if (!isConnected) {
+        await client.connect();
+        isConnected = true;
+        console.log('Connected to MongoDB');
+    }
+    return client.db('reddit-bot');
+}
 
 export async function insertData(collectionName, data) {
     try {
-        await client.connect();
-        const database = client.db('reddit-bot');
+        const database = await connectToDatabase();
         const collection = database.collection(collectionName);
-
         const result = await collection.insertOne(data);
+        return result;
     } catch (error) {
         console.error('Error inserting data:', error);
-    } finally {
-        await client.close();
     }
 }
+
 export async function deleteData(collectionName, filter) {
     try {
-        await client.connect();
-        const database = client.db('reddit-bot');
+        const database = await connectToDatabase();
         const collection = database.collection(collectionName);
-
         const result = await collection.deleteOne(filter);
+        return result;
     } catch (error) {
         console.error('Error deleting data:', error);
-    } finally {
-        await client.close();
     }
 }
 
 export async function updateData(collectionName, filter, update) {
     try {
-        await client.connect();
-        const database = client.db('reddit-bot');
+        const database = await connectToDatabase();
         const collection = database.collection(collectionName);
         const result = await collection.updateOne(filter, update);
+        return result;
     } catch (error) {
-    } finally {
-        await client.close();
+        console.error('Error updating data:', error);
     }
 }
 
 export async function fetchData(collectionName, query = {}) {
     try {
-        await client.connect();
-        const database = client.db('reddit-bot');
+        const database = await connectToDatabase();
         const collection = database.collection(collectionName);
-
         const data = await collection.find(query).toArray();
         return data;
     } catch (error) {
         console.error('Error fetching data:', error);
         return [];
-    } finally {
+    }
+}
+
+export async function closeDatabaseConnection() {
+    if (client && isConnected) {
         await client.close();
+        isConnected = false;
+        console.log('MongoDB connection closed');
     }
 }

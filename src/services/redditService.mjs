@@ -101,4 +101,50 @@ export class RedditService {
             throw new Error(`Failed to fetch new posts from r/${subreddit}.`);
         }
     }
+
+async submitSelfpost({ title, body, flairid }) {
+    try {
+        if (!title || !body) {
+            throw new Error('Post title or text is missing.');
+        }
+
+        const post = await this.r.getSubreddit('igcse').submitSelfpost({
+            title: title,
+            text: body,
+            flairId: flairid,
+        });
+
+        return post.name;
+    } catch (error) {
+        console.error(`[RedditService] Error submitting selfpost to r/igcse:`, error.message);
+        throw new Error(`Failed to submit selfpost to r/igcse.`);
+    }
+}
+
+    async searchPostsById({ id }) {
+        try {
+
+            if (!id) {
+                throw new Error('Post ID is missing.');
+            }
+
+            const post = await this.r.getSubmission(id).fetch();
+
+            if (post.subreddit.display_name.toLowerCase() !== 'igcse') {
+                throw new Error('The post does not belong to the r/igcse subreddit.');
+            }
+
+            return {
+                id: post.id,
+                title: post.title,
+                url: `https://www.reddit.com${post.permalink}`,
+                author: post.author.name,
+                created_utc: post.created_utc,
+                body: post.selftext,
+            };
+        } catch (error) {
+            console.error(`[RedditService] Error searching post by ID in r/igcse:`, error.message);
+            throw new Error(`Failed to search post by ID in r/igcse.`);
+        }
+    }
 }

@@ -23,7 +23,6 @@ async function fetchAndSendNewPostsImmediately() {
         const newPosts = await redditService.getNewPosts(subreddit);
 
         if (!newPosts || newPosts.length === 0) {
-            console.log(`[AutoMod] No new posts found in r/${subreddit}.`);
             return;
         }
 
@@ -38,16 +37,14 @@ async function fetchAndSendNewPostsImmediately() {
             const channel = await discordService.client.channels.fetch(discordChannelId);
             if (channel && channel.isTextBased()) {
                 await channel.send(message);
-                console.log(`[AutoMod] Sent post "${post.title}" to Discord channel ${discordChannelId}.`);
             } else {
                 console.error(`[AutoMod] Channel ${discordChannelId} is not text-based or could not be fetched.`);
             }
         }
 
         lastCheckedTime = Math.max(...recentPosts.map(post => post.created_utc));
-        console.log(`[AutoMod] Updated lastCheckedTime: ${lastCheckedTime}`);
     } catch (error) {
-        console.error(`[AutoMod] Error fetching or sending posts: ${error.message}`);
+        return;
     }
 }
 
