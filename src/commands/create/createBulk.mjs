@@ -176,6 +176,7 @@ We appreciate your understanding and cooperation.
 
                         const thread = {
                             title: `${board} ${details} Paper Discussion Thread`,
+                            batch_number: BatchNumber,
                             url: searchResult.url,
                             unlocktime: Number(unlocktime),
                             lock: lock,
