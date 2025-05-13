@@ -303,7 +303,6 @@ We appreciate your cooperation and wish you the best of luck for your exams.
             await interaction.channel.send({
                 content: `**Discussion pin post data - Please format it before posting**\n\`\`\`${chunk.trim().replace(/^\s+/gm, '')}\`\`\``,
             });
-        };
         }
         } else {
             console.error('Failed to create discussion threads post.');
