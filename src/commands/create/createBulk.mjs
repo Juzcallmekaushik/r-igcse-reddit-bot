@@ -289,6 +289,7 @@ We appreciate your cooperation and wish you the best of luck for your exams.
                 .join('\n'),
             })),
             ],
+            color: 0xff6e4f
         };
 
         await interaction.editReply({
