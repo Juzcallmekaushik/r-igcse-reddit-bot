@@ -53,7 +53,8 @@ export async function handleCreatePosts(interaction) {
             });
             return;
         }
-
+        const randomBatchNumber = Math.floor(Math.random() * 1000000);
+        const BatchNumber = randomBatchNumber;
         let jsonData;
         const posts = [];
 
@@ -184,11 +185,9 @@ We appreciate your understanding and cooperation.
                         await insertData('scheduledBulk', thread);
 
                         const todayDate = `${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`;
-                        const indexNumber = `${new Date().toISOString().split('T')[0].replace(/-/g, '')}`; 
-
                         await insertData('bulkFetch', {
                             today_date: todayDate,
-                            index_number: indexNumber,
+                            batch_number: BatchNumber,
                             board,
                             subject_code,
                             paper_code,
@@ -208,24 +207,28 @@ We appreciate your understanding and cooperation.
                 await new Promise(resolve => setTimeout(resolve, 3000));
             }
         }
-
-        // Remove duplicates from the database
-        const fetchedBulkData = await fetchData('bulkFetch', { guildId: interaction.guild.id });
+        const fetchedBulkData = await fetchData('bulkFetch', { guildId: interaction.guild.id, batch_number: BatchNumber });
         const seenEntries = new Set();
 
         for (const record of fetchedBulkData) {
             const uniqueKey = `${record.board}-${record.subject_code}-${record.paper_code}`;
             if (seenEntries.has(uniqueKey)) {
-                // Delete duplicate entry from the database
                 await deleteData('bulkFetch', { _id: record._id });
                 console.log(`Removed duplicate entry: ${uniqueKey}`);
             } else {
                 seenEntries.add(uniqueKey);
             }
         }
-
-        // Fetch the cleaned data after removing duplicates
-        const cleanedBulkData = await fetchData('bulkFetch', { guildId: interaction.guild.id });
+        if (posts.length > 0) {
+            await interaction.editReply({
+                content: `Scheduled ${posts.length} posts successfully!`,
+            });
+        } else {
+            await interaction.editReply({
+                content: 'No posts were scheduled.',
+            });
+        }
+        const cleanedBulkData = await fetchData('bulkFetch', { guildId: interaction.guild.id, batch_number: BatchNumber });
 
         const groupedData = cleanedBulkData.reduce((acc, record) => {
             const key = `${record.board} ${record.subject_code}`;
@@ -266,27 +269,29 @@ We appreciate your cooperation and wish you the best of luck for your exams.
 
 — The [r/IGCSE](https://www.reddit.com/r/IGCSE/) Moderation Team
 `;
-
-        await interaction.channel.send({
-            content: `\`\`\`${formattedMessage.trim().replace(/^\s+/gm, '')}\`\`\``,
-        });
         const embed = {
-            title: `${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} Scheduled Posts`,
+            title: `${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} Scheduled Posts (${Object.keys(groupedData).length})`,
             inline: false,
             fields: [
             ...Object.entries(groupedData).map(([subject, papers]) => ({
-                name: subject,
-                value: papers.join(', '),
+            name: subject,
+            value: papers.join(', '),
             })),
             ],
         };
 
         await interaction.editReply({
-            content: 'Posts created successfully!',
+            content: `${Object.keys(groupedData).length} Posts created successfully!`,
         });
         await interaction.channel.send({
             embeds: [embed],
         });
+        const chunks = formattedMessage.match(/[\s\S]{1,1990}/g) || [];
+        for (const chunk of chunks) {
+            await interaction.channel.send({
+                content: `\`\`\`${chunk.trim().replace(/^\s+/gm, '')}\`\`\``,
+            });
+        }
         } else {
             console.error('Failed to create discussion threads post.');
             await interaction.channel.send({
