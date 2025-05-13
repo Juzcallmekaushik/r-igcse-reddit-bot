@@ -298,11 +298,12 @@ We appreciate your cooperation and wish you the best of luck for your exams.
         await interaction.channel.send({
             embeds: [embed],
         });
-        const chunks = formattedMessage.match(/[\s\S]{1,1990}/g) || [];
+        const chunks = formattedMessage.match(/[\s\S]{1,1960}/g) || [];
         for (const chunk of chunks) {
             await interaction.channel.send({
-                content: `\`\`\`${chunk.trim().replace(/^\s+/gm, '')}\`\`\``,
+                content: `**Discussion pin post data - Please format it before posting**\n\`\`\`${chunk.trim().replace(/^\s+/gm, '')}\`\`\``,
             });
+        };
         }
         } else {
             console.error('Failed to create discussion threads post.');
