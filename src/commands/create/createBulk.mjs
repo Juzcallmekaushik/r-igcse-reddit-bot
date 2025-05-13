@@ -275,8 +275,17 @@ We appreciate your cooperation and wish you the best of luck for your exams.
             inline: false,
             fields: [
             ...Object.entries(groupedData).map(([subject, papers]) => ({
-            name: subject,
-            value: papers.join(', '),
+                name: subject,
+                value: papers
+                .map(paper => {
+                    const record = cleanedBulkData.find(
+                    r => `[P${r.paper_code}](${r.url})` === paper
+                    );
+                    return record
+                    ? `P${record.paper_code} - ${record.unlocktime ? `<t:${record.unlocktime}:R>` : 'Not Locked'}`
+                    : paper;
+                })
+                .join(', '),
             })),
             ],
         };
