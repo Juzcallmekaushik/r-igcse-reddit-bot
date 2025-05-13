@@ -272,7 +272,7 @@ We appreciate your cooperation and wish you the best of luck for your exams.
 — The [r/IGCSE](https://www.reddit.com/r/IGCSE/) Moderation Team
 `;
         const embed = {
-            title: `${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} Scheduled Posts (${Object.keys(groupedData).length})`,
+            title: `${cleanedBulkData.batch_number} Scheduled Posts (${cleanedBulkData.length})`,
             inline: false,
             fields: [
             ...Object.entries(groupedData).map(([subject, papers]) => ({
@@ -283,7 +283,7 @@ We appreciate your cooperation and wish you the best of luck for your exams.
                     r => `[P${r.paper_code}](${r.url})` === paper
                     );
                     return record
-                    ? `P${record.paper_code} - ${record.unlocktime ? `<t:${record.unlocktime}:R>` : 'Not Locked'}`
+                    ? `[P${record.paper_code}](${record.url}) - ${record.unlocktime ? `<t:${record.unlocktime}:R>` : 'Not Locked'}`
                     : paper;
                 })
                 .join(', '),
@@ -292,7 +292,7 @@ We appreciate your cooperation and wish you the best of luck for your exams.
         };
 
         await interaction.editReply({
-            content: `${Object.keys(groupedData).length} Posts created successfully!`,
+            content: `${cleanedBulkData.length} Posts created successfully!`,
         });
         await interaction.channel.send({
             embeds: [embed],
