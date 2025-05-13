@@ -272,7 +272,7 @@ We appreciate your cooperation and wish you the best of luck for your exams.
 — The [r/IGCSE](https://www.reddit.com/r/IGCSE/) Moderation Team
 `;
         const embed = {
-            title: `${cleanedBulkData.batch_number} Scheduled Posts (${cleanedBulkData.length})`,
+            title: `#${BatchNumber} Scheduled Posts (${cleanedBulkData.length})`,
             inline: false,
             fields: [
             ...Object.entries(groupedData).map(([subject, papers]) => ({
@@ -286,7 +286,7 @@ We appreciate your cooperation and wish you the best of luck for your exams.
                     ? `[P${record.paper_code}](${record.url}) - ${record.unlocktime ? `<t:${record.unlocktime}:R>` : 'Not Locked'}`
                     : paper;
                 })
-                .join(', '),
+                .join('\n'),
             })),
             ],
         };
