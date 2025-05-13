@@ -189,6 +189,7 @@ We appreciate your understanding and cooperation.
                         await insertData('bulkFetch', {
                             today_date: todayDate,
                             batch_number: BatchNumber,
+                            unlocktime: unlocktime,
                             board,
                             subject_code,
                             paper_code,
