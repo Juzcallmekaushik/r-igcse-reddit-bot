@@ -73,7 +73,6 @@ export async function handleCreatePosts(interaction) {
             return;
         }
 
-        // Filter out duplicates from jsonData
         const uniqueEntries = [];
         const seenEntriesForJson = new Set();
 
@@ -242,9 +241,6 @@ We appreciate your understanding and cooperation.
         }, {});
 
         const formattedMessage = `
-**Greetings,**
----
-
 **These are the ${new Date().toLocaleString('en-GB', { month: 'long', day: 'numeric' })} Discussion Threads:**
 
 ${Object.entries(groupedData)
@@ -253,23 +249,6 @@ ${Object.entries(groupedData)
         `**${subject}** – ${papers.join(', ')}`
     )
     .join('\n')}
-
----
-
-**IMPORTANT NOTICE ⚠️**
----
-
-- Firstly, [r/IGCSE](https://www.reddit.com/r/IGCSE/) does not tolerate any form of [malpractice](https://www.reddit.com/r/igcse/wiki/rules/), such as asking for or sharing examination material before its official release. This rule **includes jokes about sharing or asking for leaks**. Any users found to violate these rules will be banned from the subreddit without warning.
-
-- Secondly, **paper discussion may only take place in posts with the "May/June 2025 Paper Discussion Thread".** These threads are created by the subreddit moderation team. **Do not make any posts pertaining to paper discussion yourself or comment on such posts.** If a post for your exam does not exist, please [message the moderators](https://www.reddit.com/message/compose?to=/r/igcse), and we will create one for you.
-
-To find the discussion thread for your exam, click on the orange "May/June 2025 Paper Discussion" Flair under the title of this post. Doing so will show you all the discussion posts for the session. Alternatively, you can [click here](https://www.reddit.com/r/igcse/?f=flair_name%3A%22May%2FJune%202025%20Paper%20Discussion%22) to view all the discussion posts.
-
----
-
-We appreciate your cooperation and wish you the best of luck for your exams.
-
-— The [r/IGCSE](https://www.reddit.com/r/IGCSE/) Moderation Team
 `;
         const embed = {
             title: `#${BatchNumber} Scheduled Posts (${cleanedBulkData.length})`,
