@@ -15,7 +15,7 @@ async function connectToDatabase() {
         isConnected = true;
         console.log('Connected to MongoDB');
     }
-    return client.db('reddit-bot');
+    return client.db('r-igcse-bot');
 }
 
 export async function insertData(collectionName, data) {
