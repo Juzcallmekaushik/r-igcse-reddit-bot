@@ -76,15 +76,27 @@ export class DiscordService {
       } catch (error) {
         await this.logService.logErrorToChannel(error, 'Interaction Handling', interaction);
 
+        let errorMessage = 'Failed to process the command. Please try again later.';
+        
+        // Handle specific Discord API errors
+        if (error.message && error.message.includes('Must be 2000 or fewer in length')) {
+          errorMessage = 'The response was too long for Discord. The command may have partially succeeded. Please check the results manually.';
+        }
+
         if (interaction.deferred) {
           await interaction.editReply({
-            content: 'Failed to process the command. Please try again later.',
+            content: errorMessage,
           });
         }
 
         if (interaction.channel) {
+          // Ensure the error message itself doesn't exceed 2000 characters
+          const shortErrorMessage = error.message && error.message.length > 1900 
+            ? error.message.substring(0, 1900) + '...' 
+            : error.message;
+            
           await interaction.channel.send({
-            content: `An error occurred while processing your command: ${error.message}`,
+            content: `An error occurred while processing your command: ${shortErrorMessage}`,
           });
         }
       }

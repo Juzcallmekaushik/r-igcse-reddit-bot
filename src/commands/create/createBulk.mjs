@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import { RedditService } from '../../services/redditService.mjs';
 import { insertData, deleteData, fetchData } from '../../services/mongoService.mjs';
 import { LogService } from '../../services/logService.mjs';
+import { sendChunkedMessage } from '../../utils/messageUtils.mjs';
 import fetch from 'node-fetch';
 
 export const createPostCommands = [
@@ -298,12 +299,17 @@ We appreciate your cooperation and wish you the best of luck for your exams.
         await interaction.channel.send({
             embeds: [embed],
         });
-        const chunks = formattedMessage.match(/[\s\S]{1,1960}/g) || [];
-        for (const chunk of chunks) {
-            await interaction.channel.send({
-                content: `**Discussion pin post data - Please format it before posting**\n\`\`\`${chunk.trim().replace(/^\s+/gm, '')}\`\`\``,
-            });
-        }
+        // Send the formatted message in chunks to avoid Discord's 2000 character limit
+        await sendChunkedMessage(
+            interaction.channel,
+            formattedMessage.replace(/^\s+/gm, ''),
+            {
+                title: '**Discussion pin post data - Please format it before posting**\n',
+                wrapperPrefix: '```',
+                wrapperSuffix: '```',
+                addPartNumbers: true
+            }
+        );
         } else {
             console.error('Failed to create discussion threads post.');
             await interaction.channel.send({

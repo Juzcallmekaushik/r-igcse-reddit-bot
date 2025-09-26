@@ -17,13 +17,20 @@ export class LogService {
           continue;
         }
 
+        // Ensure embed field values don't exceed Discord limits
+        const errorMessage = error.message || 'No message provided';
+        const truncatedMessage = errorMessage.length > 1000 ? errorMessage.slice(0, 997) + '...' : errorMessage;
+        
+        const stackTrace = error.stack || 'No stacktrace available';
+        const truncatedStack = stackTrace.length > 1000 ? stackTrace.slice(0, 997) + '...' : stackTrace;
+
         const embed = {
           title: `An Exception Occurred - ${context}`,
           fields: [
-            { name: 'Message', value: error.message || 'No message provided', inline: false },
+            { name: 'Message', value: truncatedMessage, inline: false },
             {
               name: 'Stacktrace',
-              value: `\`\`\`js\n${error.stack?.slice(0, 1000) || 'No stacktrace available'}\n\`\`\``,
+              value: `\`\`\`js\n${truncatedStack}\n\`\`\``,
               inline: false,
             },
           ],

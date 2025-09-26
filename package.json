@@ -2,12 +2,12 @@
   "name": "reddit-discord-bot",
   "version": "1.0.0",
   "description": "A Discord bot that interacts with Reddit using snoowrap.",
-  "main": "src/index.ts",
+  "main": "src/index.mjs",
   "type": "module",
   "scripts": {
     "start": "nodemon --watch src --exec \"node src/index.mjs\"",
     "build": "tsc",
-    "dev": "ts-node-dev src/index.ts"
+    "dev": "nodemon --watch src --exec \"node src/index.mjs\""
   },
   "dependencies": {
     "discord.js": "^14.18.0",
