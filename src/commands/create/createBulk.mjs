@@ -162,7 +162,7 @@ We appreciate your understanding and cooperation.
                 const createdPost = await redditService.submitSelfpost({
                     title: post.title,
                     body: post.body,
-                    flairid: '647215c6-202c-11f0-ba0a-565d319d9852',
+                    flairid: '03f83270-99df-11f0-a376-3646b69f10dd', // '647215c6-202c-11f0-ba0a-565d319d9852',
                 });
                 if (createdPost) {
                     await new Promise(resolve => setTimeout(resolve, 3000));
